@@ -1,0 +1,109 @@
+
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const { Client, LocalAuth } = require("whatsapp-web.js");
+const qrcode = require("qrcode");
+const fs = require("fs");
+const path = require("path");
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+const API_KEY = process.env.WHATSAPP_API_KEY || "wpp_sk_7fB9dK2pL5xR8tZ3vQ6mN1cX4jH7gS9a";
+
+app.use(cors());
+app.use(express.json());
+
+const authMiddleware = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ success: false, error: "Não autorizado" });
+  }
+  const token = authHeader.split(" ")[1];
+  if (token !== API_KEY) {
+    return res.status(401).json({ success: false, error: "Token inválido" });
+  }
+  next();
+};
+
+const SESSION_DIR = path.join(__dirname, "sessions");
+if (!fs.existsSync(SESSION_DIR)) fs.mkdirSync(SESSION_DIR, { recursive: true });
+
+const sessions = new Map();
+const stats = { sent: 0, failed: 0, queued: 0 };
+
+app.get("/api/status", (req, res) => {
+  res.json({ success: true, status: "online", sessions: sessions.size, stats });
+});
+
+app.post("/api/sessions", authMiddleware, async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    if (!sessionId) return res.status(400).json({ success: false, error: "ID da sessão é obrigatório" });
+    if (sessions.has(sessionId)) return res.status(400).json({ success: false, error: "Sessão já existe" });
+
+    const sessionData = { status: "initializing", qrCode: null, client: null, lastActivity: new Date() };
+    sessions.set(sessionId, sessionData);
+
+    const client = new Client({
+      authStrategy: new LocalAuth({ clientId: sessionId, dataPath: SESSION_DIR }),
+      puppeteer: {
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-accelerated-2d-canvas",
+          "--no-first-run",
+          "--no-zygote",
+          "--single-process",
+          "--disable-gpu"
+        ],
+      },
+    });
+
+    client.on("qr", async (qr) => {
+      try {
+        const qrDataURL = await qrcode.toDataURL(qr);
+        sessionData.qrCode = qrDataURL;
+        sessionData.status = "qr_ready";
+      } catch (error) {
+        console.error("Erro ao gerar QR code:", error);
+      }
+    });
+
+    client.on("authenticated", () => {
+      sessionData.status = "authenticated";
+      sessionData.qrCode = null;
+    });
+
+    client.on("ready", () => {
+      sessionData.status = "ready";
+      sessionData.lastActivity = new Date();
+    });
+
+    client.on("disconnected", (reason) => {
+      sessionData.status = "disconnected";
+    });
+
+    await client.initialize();
+    sessionData.client = client;
+
+    res.json({
+      success: true,
+      session: {
+        id: sessionId,
+        status: sessionData.status,
+        qrCode: sessionData.qrCode,
+        lastActivity: sessionData.lastActivity,
+      },
+    });
+  } catch (error) {
+    console.error("Erro ao criar sessão:", error);
+    res.status(500).json({ success: false, error: "Erro ao criar sessão" });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Servidor WhatsApp rodando na porta ${PORT}`);
+});
