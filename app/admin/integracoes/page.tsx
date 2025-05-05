@@ -1,15 +1,52 @@
 "use client"
 import Link from "next/link"
 import { Webhook, Database, RefreshCw, Send, Mail, Clock, FileText, Zap, Layers } from "lucide-react"
-import AdminHeader from "@/components/admin/admin-header"
-import AdminSidebar from "@/components/admin/admin-sidebar"
 
 export default function IntegracoesPage() {
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <AdminSidebar />
+      {/* Sidebar simplificada */}
+      <div className="w-64 bg-white shadow-md hidden md:block">
+        <div className="p-4">
+          <h2 className="text-xl font-bold">Admin</h2>
+        </div>
+        <nav className="mt-4">
+          <ul>
+            <li>
+              <Link href="/admin/dashboard" className="block px-4 py-2 hover:bg-gray-100">
+                Dashboard
+              </Link>
+            </li>
+            <li>
+              <Link href="/admin/pedidos" className="block px-4 py-2 hover:bg-gray-100">
+                Pedidos
+              </Link>
+            </li>
+            <li>
+              <Link href="/admin/integracoes" className="block px-4 py-2 bg-blue-50 text-blue-600 font-medium">
+                Integrações
+              </Link>
+            </li>
+            <li>
+              <Link href="/admin/configuracoes" className="block px-4 py-2 hover:bg-gray-100">
+                Configurações
+              </Link>
+            </li>
+          </ul>
+        </nav>
+      </div>
+
       <div className="flex-1">
-        <AdminHeader />
+        {/* Header simplificado */}
+        <header className="bg-white shadow-sm p-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-xl font-semibold">Painel Administrativo</h1>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">Admin</span>
+            </div>
+          </div>
+        </header>
+
         <main className="p-4 md:p-6">
           <h1 className="text-2xl font-bold mb-6">Integrações e Ferramentas</h1>
 
