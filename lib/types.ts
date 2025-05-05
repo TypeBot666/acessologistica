@@ -34,6 +34,26 @@ export interface StatusHistory {
   created_at: string
 }
 
+export type AutomationStep = {
+  status: string
+  days: number
+  emailTime: string
+  notificationChannels?: {
+    email: boolean
+  }
+}
+
+export type AutomationSettings = {
+  enabled: boolean
+  steps: AutomationStep[]
+  finalStatus: string
+  emailNotifications: boolean
+  executionTime: string
+  lastExecution: string | null
+  lastExecutionSuccess?: boolean
+  lastExecutionCount?: number
+}
+
 export interface Database {
   public: {
     Tables: {

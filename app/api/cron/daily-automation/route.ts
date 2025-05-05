@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { sendStatusUpdateEmail } from "@/lib/email/email-service"
-import { sendWhatsAppMessage, generateTrackingWhatsAppMessage } from "@/lib/services/whatsapp-service"
-import { sendSMS, generateTrackingSMSMessage } from "@/lib/services/sms-service"
 
 export async function GET(request: Request) {
   try {
@@ -53,8 +51,6 @@ export async function GET(request: Request) {
 
     let updatedCount = 0
     let emailsSent = 0
-    let whatsappSent = 0
-    let smsSent = 0
 
     // Processar cada remessa
     for (const shipment of shipments) {
@@ -112,7 +108,7 @@ export async function GET(request: Request) {
         updatedCount++
 
         // Enviar notificações conforme configurado
-        if (shipment.customer_email && nextStep?.notificationChannels?.email && settings.emailNotifications) {
+        if (shipment.customer_email && settings.emailNotifications) {
           try {
             await sendStatusUpdateEmail({
               trackingCode: shipment.tracking_code,
@@ -125,52 +121,6 @@ export async function GET(request: Request) {
             console.log(`[Daily Automation] Email enviado para ${shipment.customer_email}`)
           } catch (emailError) {
             console.error(`[Daily Automation] Erro ao enviar email para ${shipment.tracking_code}:`, emailError)
-          }
-        }
-
-        // Enviar WhatsApp se configurado
-        if (shipment.customer_phone && nextStep?.notificationChannels?.whatsapp && settings.whatsappNotifications) {
-          try {
-            const message = generateTrackingWhatsAppMessage(shipment.tracking_code, shipment.recipient_name, nextStatus)
-
-            const result = await sendWhatsAppMessage({
-              phone: shipment.customer_phone,
-              message,
-              trackingCode: shipment.tracking_code,
-              status: nextStatus,
-            })
-
-            if (result.success) {
-              whatsappSent++
-              console.log(`[Daily Automation] WhatsApp enviado para ${shipment.customer_phone}`)
-            } else {
-              console.error(`[Daily Automation] Erro ao enviar WhatsApp para ${shipment.tracking_code}:`, result.error)
-            }
-          } catch (whatsappError) {
-            console.error(`[Daily Automation] Erro ao enviar WhatsApp para ${shipment.tracking_code}:`, whatsappError)
-          }
-        }
-
-        // Enviar SMS se configurado
-        if (shipment.customer_phone && nextStep?.notificationChannels?.sms && settings.smsNotifications) {
-          try {
-            const message = generateTrackingSMSMessage(shipment.tracking_code, nextStatus)
-
-            const result = await sendSMS({
-              phone: shipment.customer_phone,
-              message,
-              trackingCode: shipment.tracking_code,
-              status: nextStatus,
-            })
-
-            if (result.success) {
-              smsSent++
-              console.log(`[Daily Automation] SMS enviado para ${shipment.customer_phone}`)
-            } else {
-              console.error(`[Daily Automation] Erro ao enviar SMS para ${shipment.tracking_code}:`, result.error)
-            }
-          } catch (smsError) {
-            console.error(`[Daily Automation] Erro ao enviar SMS para ${shipment.tracking_code}:`, smsError)
           }
         }
       }
@@ -194,7 +144,7 @@ export async function GET(request: Request) {
     }
 
     console.log(
-      `[Daily Automation] Automação concluída. ${updatedCount} remessas atualizadas, ${emailsSent} emails enviados, ${whatsappSent} mensagens WhatsApp enviadas, ${smsSent} SMS enviados.`,
+      `[Daily Automation] Automação concluída. ${updatedCount} remessas atualizadas, ${emailsSent} emails enviados.`,
     )
 
     return NextResponse.json({
@@ -203,8 +153,6 @@ export async function GET(request: Request) {
       stats: {
         updatedCount,
         emailsSent,
-        whatsappSent,
-        smsSent,
       },
     })
   } catch (error) {

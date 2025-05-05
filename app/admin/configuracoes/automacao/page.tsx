@@ -23,8 +23,6 @@ type AutomationStep = {
   emailTime?: string
   notificationChannels?: {
     email: boolean
-    whatsapp: boolean
-    sms: boolean
   }
 }
 
@@ -33,8 +31,6 @@ type AutomationSettings = {
   steps: AutomationStep[]
   finalStatus: string
   emailNotifications: boolean
-  whatsappNotifications: boolean
-  smsNotifications: boolean
   executionTime: string
   lastExecution: string | null
 }
@@ -60,7 +56,7 @@ type MessageTemplates = {
 export default function AutomacaoPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState("whatsapp")
+  const [activeTab, setActiveTab] = useState("automacao")
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
@@ -73,8 +69,6 @@ export default function AutomacaoPage() {
     steps: [],
     finalStatus: "Entregue com sucesso",
     emailNotifications: true,
-    whatsappNotifications: false,
-    smsNotifications: false,
     executionTime: "08:00",
     lastExecution: null,
   })
@@ -191,8 +185,6 @@ export default function AutomacaoPage() {
           emailTime: step.emailTime || "08:00", // Valor padrão para horário do email
           notificationChannels: step.notificationChannels || {
             email: true,
-            whatsapp: false,
-            sms: false,
           },
         }))
 
@@ -200,8 +192,6 @@ export default function AutomacaoPage() {
           ...data,
           steps: updatedSteps,
           emailNotifications: data.emailNotifications !== undefined ? data.emailNotifications : true,
-          whatsappNotifications: data.whatsappNotifications !== undefined ? data.whatsappNotifications : false,
-          smsNotifications: data.smsNotifications !== undefined ? data.smsNotifications : false,
           executionTime: data.executionTime || "08:00",
           lastExecution: data.lastExecution || null,
         })
@@ -226,8 +216,6 @@ export default function AutomacaoPage() {
               emailTime: "08:00",
               notificationChannels: {
                 email: true,
-                whatsapp: false,
-                sms: false,
               },
             },
             {
@@ -236,8 +224,6 @@ export default function AutomacaoPage() {
               emailTime: "09:00",
               notificationChannels: {
                 email: true,
-                whatsapp: false,
-                sms: false,
               },
             },
             {
@@ -246,8 +232,6 @@ export default function AutomacaoPage() {
               emailTime: "10:00",
               notificationChannels: {
                 email: true,
-                whatsapp: false,
-                sms: false,
               },
             },
             {
@@ -256,8 +240,6 @@ export default function AutomacaoPage() {
               emailTime: "11:00",
               notificationChannels: {
                 email: true,
-                whatsapp: false,
-                sms: false,
               },
             },
             {
@@ -266,8 +248,6 @@ export default function AutomacaoPage() {
               emailTime: "12:00",
               notificationChannels: {
                 email: true,
-                whatsapp: false,
-                sms: false,
               },
             },
             {
@@ -276,15 +256,11 @@ export default function AutomacaoPage() {
               emailTime: "13:00",
               notificationChannels: {
                 email: true,
-                whatsapp: false,
-                sms: false,
               },
             },
           ],
           finalStatus: "Entregue com sucesso",
           emailNotifications: true,
-          whatsappNotifications: false,
-          smsNotifications: false,
           executionTime: "08:00",
           lastExecution: null,
         })
@@ -308,8 +284,6 @@ export default function AutomacaoPage() {
             emailTime: "08:00",
             notificationChannels: {
               email: true,
-              whatsapp: false,
-              sms: false,
             },
           },
           {
@@ -318,8 +292,6 @@ export default function AutomacaoPage() {
             emailTime: "09:00",
             notificationChannels: {
               email: true,
-              whatsapp: false,
-              sms: false,
             },
           },
           {
@@ -328,8 +300,6 @@ export default function AutomacaoPage() {
             emailTime: "10:00",
             notificationChannels: {
               email: true,
-              whatsapp: false,
-              sms: false,
             },
           },
           {
@@ -338,8 +308,6 @@ export default function AutomacaoPage() {
             emailTime: "11:00",
             notificationChannels: {
               email: true,
-              whatsapp: false,
-              sms: false,
             },
           },
           {
@@ -348,8 +316,6 @@ export default function AutomacaoPage() {
             emailTime: "12:00",
             notificationChannels: {
               email: true,
-              whatsapp: false,
-              sms: false,
             },
           },
           {
@@ -358,15 +324,11 @@ export default function AutomacaoPage() {
             emailTime: "13:00",
             notificationChannels: {
               email: true,
-              whatsapp: false,
-              sms: false,
             },
           },
         ],
         finalStatus: "Entregue com sucesso",
         emailNotifications: true,
-        whatsappNotifications: false,
-        smsNotifications: false,
         executionTime: "08:00",
         lastExecution: null,
       })
@@ -437,14 +399,6 @@ export default function AutomacaoPage() {
     setSettings({ ...settings, emailNotifications: checked })
   }
 
-  const handleToggleWhatsAppNotifications = (checked: boolean) => {
-    setSettings({ ...settings, whatsappNotifications: checked })
-  }
-
-  const handleToggleSMSNotifications = (checked: boolean) => {
-    setSettings({ ...settings, smsNotifications: checked })
-  }
-
   const handleAddStep = () => {
     const newStep = {
       status: allStatuses[0],
@@ -452,8 +406,6 @@ export default function AutomacaoPage() {
       emailTime: "08:00", // Horário padrão para novos passos
       notificationChannels: {
         email: settings.emailNotifications,
-        whatsapp: settings.whatsappNotifications,
-        sms: settings.smsNotifications,
       },
     }
     setSettings({ ...settings, steps: [...settings.steps, newStep] })
@@ -484,16 +436,14 @@ export default function AutomacaoPage() {
     setSettings({ ...settings, steps: newSteps })
   }
 
-  const handleToggleStepChannel = (index: number, channel: "email" | "whatsapp" | "sms", checked: boolean) => {
+  const handleToggleStepChannel = (index: number, checked: boolean) => {
     const newSteps = [...settings.steps]
     if (!newSteps[index].notificationChannels) {
       newSteps[index].notificationChannels = {
         email: true,
-        whatsapp: false,
-        sms: false,
       }
     }
-    newSteps[index].notificationChannels[channel] = checked
+    newSteps[index].notificationChannels.email = checked
     setSettings({ ...settings, steps: newSteps })
   }
 
@@ -609,8 +559,6 @@ export default function AutomacaoPage() {
           emailTime: step.emailTime || "08:00",
           notificationChannels: step.notificationChannels || {
             email: settings.emailNotifications,
-            whatsapp: settings.whatsappNotifications,
-            sms: settings.smsNotifications,
           },
         })),
       }
@@ -859,12 +807,10 @@ export default function AutomacaoPage() {
           <div className="max-w-7xl mx-auto">
             <h1 className="text-2xl font-bold mb-6">Automação e Notificações</h1>
 
-            <Tabs defaultValue="whatsapp" value={activeTab} onValueChange={setActiveTab}>
+            <Tabs defaultValue="automacao" value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-6">
-                <TabsTrigger value="whatsapp">WhatsApp (Z-API)</TabsTrigger>
-                <TabsTrigger value="sms">SMS (OneFunnel)</TabsTrigger>
-                <TabsTrigger value="templates">Templates de Mensagens</TabsTrigger>
                 <TabsTrigger value="automacao">Automação</TabsTrigger>
+                <TabsTrigger value="templates">Templates de Email</TabsTrigger>
               </TabsList>
 
               <TabsContent value="whatsapp">
