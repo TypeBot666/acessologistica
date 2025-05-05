@@ -80,47 +80,49 @@ export default function TrackingPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
-        <div className="container mx-auto flex items-center px-4 py-4">
+        <div className="container mx-auto flex items-center px-4 py-3">
           <Link href="/">
             <img
               src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo_home%20%281%29-k4dNWea9Xt8N85gYxkxe0vxCGH4uG9.webp"
               alt="Jadlog"
-              className="h-10 w-auto"
+              className="h-8 w-auto sm:h-10"
             />
           </Link>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-6 sm:py-8">
         <div className="mx-auto max-w-2xl">
           {loading ? (
-            <div className="flex h-64 items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-red-600" />
-              <span className="ml-2 text-lg">Carregando informações da remessa...</span>
+            <div className="flex h-48 sm:h-64 items-center justify-center">
+              <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-red-600" />
+              <span className="ml-2 text-base sm:text-lg">Carregando informações da remessa...</span>
             </div>
           ) : !trackingCode ? (
-            <div className="rounded-lg bg-white p-6 shadow-md text-center">
-              <h2 className="mb-4 text-xl font-bold text-gray-900">Nenhum código de rastreio informado</h2>
-              <p className="mb-4 text-gray-600">
+            <div className="rounded-lg bg-white p-4 sm:p-6 shadow-md text-center">
+              <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-bold text-gray-900">
+                Nenhum código de rastreio informado
+              </h2>
+              <p className="mb-4 text-sm sm:text-base text-gray-600">
                 Por favor, retorne à página inicial e informe um código de rastreio válido.
               </p>
               <Link
                 href="/"
-                className="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700"
+                className="inline-flex items-center rounded-lg bg-red-600 px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base font-medium text-white hover:bg-red-700"
               >
                 Voltar para a página inicial
               </Link>
             </div>
           ) : notFound ? (
-            <div className="rounded-lg bg-white p-6 shadow-md text-center">
-              <h2 className="mb-4 text-xl font-bold text-gray-900">Remessa não encontrada</h2>
-              <p className="mb-4 text-gray-600">
+            <div className="rounded-lg bg-white p-4 sm:p-6 shadow-md text-center">
+              <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-bold text-gray-900">Remessa não encontrada</h2>
+              <p className="mb-4 text-sm sm:text-base text-gray-600">
                 Não foi possível encontrar uma remessa com o código <span className="font-mono">{trackingCode}</span>.
                 Por favor, verifique o código e tente novamente.
               </p>
               <Link
                 href="/"
-                className="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700"
+                className="inline-flex items-center rounded-lg bg-red-600 px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base font-medium text-white hover:bg-red-700"
               >
                 Voltar para a página inicial
               </Link>

@@ -1,25 +1,31 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ShipmentForm } from "@/components/shipment-form"
-import { ShipmentList } from "@/components/shipment-list"
-import { Truck, LogOut, FileJson, Loader2, RefreshCw } from "lucide-react"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/use-toast"
 import type { Shipment } from "@/lib/types"
-import Link from "next/link"
+import { ShipmentList } from "@/components/shipment-list"
+import { ShipmentForm } from "@/components/shipment-form"
+import { AdminHeader } from "@/components/admin/admin-header"
+import { AdminSidebar } from "@/components/admin/admin-sidebar"
+import { DashboardStats } from "@/components/admin/dashboard-stats"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Loader2 } from "lucide-react"
 
 export default function AdminDashboard() {
   const router = useRouter()
   const { toast } = useToast()
   const [shipments, setShipments] = useState<Shipment[]>([])
   const [loading, setLoading] = useState(true)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const supabase = createClientSupabaseClient()
+  const [stats, setStats] = useState({
+    total: 0,
+    inTransit: 0,
+    delivered: 0,
+    pending: 0,
+  })
 
   // Check authentication
   useEffect(() => {
@@ -58,10 +64,27 @@ export default function AdminDashboard() {
         productType: item.product_type,
         weight: item.weight,
         shipDate: item.ship_date,
-        status: item.status as "Aguardando" | "Em trânsito" | "Entregue",
+        status: item.status as any,
       }))
 
       setShipments(formattedShipments)
+
+      // Calculate stats
+      const total = formattedShipments.length
+      const inTransit = formattedShipments.filter(
+        (s) => s.status.includes("trânsito") || s.status.includes("rota") || s.status.includes("triagem"),
+      ).length
+      const delivered = formattedShipments.filter((s) => s.status.includes("Entregue")).length
+      const pending = formattedShipments.filter(
+        (s) => s.status.includes("postado") || s.status.includes("Aguardando"),
+      ).length
+
+      setStats({
+        total,
+        inTransit,
+        delivered,
+        pending,
+      })
     } catch (error) {
       console.error("Erro completo ao buscar remessas:", error)
       toast({
@@ -123,7 +146,7 @@ export default function AdminDashboard() {
         product_type: shipment.productType,
         weight: Number(shipment.weight) || 0,
         ship_date: shipment.shipDate,
-        status: shipment.status || "Aguardando",
+        status: shipment.status || "Objeto postado",
       }
 
       console.log("Dados formatados para inserção:", JSON.stringify(shipmentData, null, 2))
@@ -143,7 +166,7 @@ export default function AdminDashboard() {
       // Adicionar ao histórico de status - simplificado
       const historyResult = await supabase.from("status_history").insert({
         tracking_code: shipment.trackingCode,
-        status: shipment.status || "Aguardando",
+        status: shipment.status || "Objeto postado",
         notes: "Remessa cadastrada",
       })
 
@@ -221,7 +244,7 @@ export default function AdminDashboard() {
       await supabase.from("status_history").insert({
         tracking_code: trackingCode,
         status: newStatus,
-        notes: `Status atualizado para ${newStatus}`,
+        notes: "Status atualizado",
       })
 
       // Refresh shipments list
@@ -229,145 +252,97 @@ export default function AdminDashboard() {
 
       toast({
         title: "Sucesso",
-        description: `Status atualizado para ${newStatus}!`,
+        description: "Status da remessa atualizado com sucesso!",
       })
     } catch (error: any) {
       console.error("Error updating status:", error)
       toast({
         title: "Erro",
-        description: `Falha ao atualizar status: ${error.message}`,
+        description: `Falha ao atualizar o status da remessa: ${error.message}`,
         variant: "destructive",
       })
     }
   }
 
-  const exportToJson = () => {
-    const dataStr = JSON.stringify(shipments, null, 2)
-    const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr)
+  const handleDeleteMultiple = async (trackingCodes: string[]) => {
+    try {
+      setLoading(true)
+      const response = await fetch("/api/shipments/delete-multiple", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ trackingCodes }),
+      })
 
-    const exportFileDefaultName = `remessas-${new Date().toISOString().split("T")[0]}.json`
-
-    const linkElement = document.createElement("a")
-    linkElement.setAttribute("href", dataUri)
-    linkElement.setAttribute("download", exportFileDefaultName)
-    linkElement.click()
-  }
-
-  const importFromJson = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const fileReader = new FileReader()
-    if (event.target.files && event.target.files.length > 0) {
-      fileReader.readAsText(event.target.files[0], "UTF-8")
-      fileReader.onload = async (e) => {
-        if (e.target?.result) {
-          try {
-            const importedShipments = JSON.parse(e.target.result as string) as Shipment[]
-
-            // Abordagem simplificada
-            for (const shipment of importedShipments) {
-              const shipmentData = {
-                tracking_code: shipment.trackingCode,
-                sender_name: shipment.senderName,
-                recipient_name: shipment.recipientName,
-                recipient_cpf: shipment.recipientCpf,
-                origin_address: shipment.originAddress,
-                destination_address: shipment.destinationAddress,
-                product_type: shipment.productType,
-                weight: Number(shipment.weight) || 0,
-                ship_date: shipment.shipDate,
-                status: shipment.status,
-              }
-
-              await supabase.from("shipments").upsert(shipmentData, { onConflict: "tracking_code" })
-            }
-
-            // Refresh shipments list
-            await fetchShipments()
-
-            toast({
-              title: "Sucesso",
-              description: "Remessas importadas com sucesso!",
-            })
-          } catch (error: any) {
-            console.error("Error importing shipments:", error)
-            toast({
-              title: "Erro",
-              description: `Falha ao importar remessas: ${error.message}`,
-              variant: "destructive",
-            })
-          }
-        }
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || "Erro ao excluir remessas")
       }
+
+      toast({
+        title: "Sucesso",
+        description: `${trackingCodes.length} remessas excluídas com sucesso!`,
+      })
+
+      // Atualizar a lista de remessas
+      fetchShipments()
+    } catch (error) {
+      console.error("Erro ao excluir remessas:", error)
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro ao excluir remessas",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4">
-          <div className="flex items-center">
-            <Truck className="mr-2 h-6 w-6 text-red-600" />
-            <h1 className="text-xl font-bold text-gray-900">Painel Administrativo</h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="flex space-x-2">
-              <Button variant="outline" onClick={exportToJson}>
-                <FileJson className="mr-2 h-4 w-4" />
-                Exportar JSON
-              </Button>
-              <div className="relative">
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={importFromJson}
-                  className="absolute inset-0 cursor-pointer opacity-0"
-                />
-                <Button variant="outline">
-                  <FileJson className="mr-2 h-4 w-4" />
-                  Importar JSON
-                </Button>
-              </div>
-              <Link href="/admin/integracoes">
-                <Button variant="outline">
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Integrações
-                </Button>
-              </Link>
+    <div className="min-h-screen bg-gray-100">
+      <AdminHeader onMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} onLogout={handleLogout} />
+
+      <div className="flex">
+        <AdminSidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
+
+        <main className="flex-1 p-4 sm:p-6 md:p-8">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-6">Painel de Controle</h1>
+
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <Loader2 className="h-8 w-8 animate-spin text-red-600" />
+              <span className="ml-2 text-lg">Carregando dados...</span>
             </div>
-            <Button variant="ghost" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Sair
-            </Button>
-          </div>
-        </div>
-      </header>
+          ) : (
+            <>
+              <DashboardStats stats={stats} />
 
-      <main className="container mx-auto px-4 py-8">
-        {loading ? (
-          <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-red-600" />
-            <span className="ml-2 text-lg">Carregando remessas...</span>
-          </div>
-        ) : (
-          <Tabs defaultValue="list">
-            <TabsList className="mb-8 grid w-full grid-cols-2">
-              <TabsTrigger value="list">Listar Remessas</TabsTrigger>
-              <TabsTrigger value="add">Cadastrar Remessa</TabsTrigger>
-            </TabsList>
+              <div className="mt-8">
+                <Tabs defaultValue="shipments">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="shipments">Remessas</TabsTrigger>
+                    <TabsTrigger value="new">Nova Remessa</TabsTrigger>
+                  </TabsList>
 
-            <TabsContent value="list">
-              <ShipmentList
-                shipments={shipments}
-                onUpdateShipment={handleUpdateShipment}
-                onUpdateStatus={handleUpdateStatus}
-              />
-            </TabsContent>
+                  <TabsContent value="shipments">
+                    <ShipmentList
+                      shipments={shipments}
+                      onUpdateShipment={handleUpdateShipment}
+                      onUpdateStatus={handleUpdateStatus}
+                      onDeleteMultiple={handleDeleteMultiple}
+                    />
+                  </TabsContent>
 
-            <TabsContent value="add">
-              <ShipmentForm onAddShipment={handleAddShipment} />
-            </TabsContent>
-          </Tabs>
-        )}
-      </main>
+                  <TabsContent value="new">
+                    <ShipmentForm onAddShipment={handleAddShipment} />
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </>
+          )}
+        </main>
+      </div>
     </div>
   )
 }

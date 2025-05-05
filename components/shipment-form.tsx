@@ -3,318 +3,323 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { Shipment } from "@/lib/types"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
+import { Loader2 } from "lucide-react"
+import type { Shipment } from "@/lib/types"
 
-interface ShipmentFormProps {
-  onAddShipment: (shipment: Shipment) => void
-  initialData?: Shipment
-  isEditing?: boolean
-  onCancel?: () => void
-}
-
-export function ShipmentForm({ onAddShipment, initialData, isEditing = false, onCancel }: ShipmentFormProps) {
+export function ShipmentForm() {
+  const router = useRouter()
   const { toast } = useToast()
-
-  // Estado para todos os campos do formulário, incluindo o código de rastreio
-  const [formData, setFormData] = useState({
-    trackingCode: initialData?.trackingCode || "",
-    senderName: initialData?.senderName || "",
-    recipientName: initialData?.recipientName || "",
-    recipientCpf: initialData?.recipientCpf || "",
-    originAddress: initialData?.originAddress || "",
-    destinationAddress: initialData?.destinationAddress || "",
-    productType: initialData?.productType || "",
-    weight: initialData?.weight || "",
-    shipDate: initialData?.shipDate || new Date().toISOString().split("T")[0],
-    status: initialData?.status || ("Objeto postado" as any),
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState<Partial<Shipment>>({
+    trackingCode: "",
+    senderName: "",
+    recipientName: "",
+    recipientCpf: "",
+    originAddress: "",
+    destinationAddress: "",
+    productType: "",
+    weight: "",
+    shipDate: new Date().toISOString().split("T")[0],
+    status: "Objeto postado",
+    customerEmail: "", // Garantir que este campo existe
+    customerPhone: "", // Garantir que este campo existe
   })
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const formatCpf = (value: string) => {
-    const digits = value.replace(/\D/g, "")
-    let formatted = digits
-
-    if (digits.length > 3) {
-      formatted = `${digits.substring(0, 3)}.${digits.substring(3)}`
-    }
-    if (digits.length > 6) {
-      formatted = `${formatted.substring(0, 7)}.${digits.substring(6)}`
-    }
-    if (digits.length > 9) {
-      formatted = `${formatted.substring(0, 11)}-${digits.substring(9, 11)}`
-    }
-
-    return formatted.substring(0, 14)
-  }
-
-  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatCpf(e.target.value)
-    setFormData((prev) => ({ ...prev, recipientCpf: formatted }))
-  }
-
-  const generateTrackingCode = () => {
-    try {
-      const date = new Date()
-      const year = date.getFullYear()
-      const month = String(date.getMonth() + 1).padStart(2, "0")
-      const day = String(date.getDate()).padStart(2, "0")
-      const dateStr = `${year}${month}${day}`
-
-      // Generate random 4-digit number
-      const random = Math.floor(1000 + Math.random() * 9000)
-
-      return `LOG-${dateStr}-${random}`
-    } catch (error) {
-      console.error("Erro ao gerar código de rastreio:", error)
-      // Fallback para um código simples em caso de erro
-      return `LOG-${Date.now()}`
-    }
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
+    setLoading(true)
 
     try {
       // Validar campos obrigatórios
       const requiredFields = [
-        { key: "senderName", label: "Nome do Remetente" },
-        { key: "recipientName", label: "Nome do Destinatário" },
-        { key: "recipientCpf", label: "CPF do Destinatário" },
-        { key: "originAddress", label: "Endereço de Origem" },
-        { key: "destinationAddress", label: "Endereço de Destino" },
-        { key: "productType", label: "Tipo de Produto" },
-        { key: "weight", label: "Peso" },
-        { key: "shipDate", label: "Data de Envio" },
+        "trackingCode",
+        "senderName",
+        "recipientName",
+        "recipientCpf",
+        "originAddress",
+        "destinationAddress",
+        "productType",
+        "weight",
+        "shipDate",
+        "status",
       ]
 
-      for (const field of requiredFields) {
-        if (!formData[field.key as keyof typeof formData]) {
-          toast({
-            title: "Campo obrigatório",
-            description: `O campo "${field.label}" é obrigatório.`,
-            variant: "destructive",
-          })
-          setIsSubmitting(false)
-          return
+      const missingFields = requiredFields.filter((field) => !formData[field as keyof Shipment])
+
+      if (missingFields.length > 0) {
+        throw new Error(`Campos obrigatórios não preenchidos: ${missingFields.join(", ")}`)
+      }
+
+      // Validar formato do código de rastreio
+      const trackingCodeRegex = /^LOG-\d{8}-\d{4}$/
+      if (!trackingCodeRegex.test(formData.trackingCode || "")) {
+        throw new Error("Código de rastreio inválido. Use o formato: LOG-AAAAMMDD-XXXX")
+      }
+
+      // Validar CPF
+      const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/
+      if (!cpfRegex.test(formData.recipientCpf || "")) {
+        throw new Error("CPF inválido. Use o formato: 123.456.789-00")
+      }
+
+      // Validar email (se fornecido)
+      if (formData.customerEmail) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(formData.customerEmail)) {
+          throw new Error("Email inválido")
         }
       }
 
-      // Se não for edição e não tiver código de rastreio, gerar um novo
-      const finalData = { ...formData }
-      if (!isEditing && !finalData.trackingCode) {
-        finalData.trackingCode = generateTrackingCode()
+      // Validar peso
+      const weight = Number(formData.weight)
+      if (isNaN(weight) || weight <= 0) {
+        throw new Error("Peso inválido")
       }
 
-      console.log("Enviando dados do formulário:", finalData)
-      await onAddShipment(finalData as Shipment)
+      // Enviar dados para a API
+      const response = await fetch("/api/shipments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          weight: Number(formData.weight),
+        }),
+      })
 
-      if (!isEditing) {
-        // Reset form if not editing
-        setFormData({
-          trackingCode: "",
-          senderName: "",
-          recipientName: "",
-          recipientCpf: "",
-          originAddress: "",
-          destinationAddress: "",
-          productType: "",
-          weight: "",
-          shipDate: new Date().toISOString().split("T")[0],
-          status: "Objeto postado",
-        })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Erro ao criar remessa")
       }
 
-      if (onCancel && isEditing) {
-        onCancel()
-      }
+      toast({
+        title: "Remessa criada com sucesso",
+        description: `Código de rastreio: ${formData.trackingCode}`,
+      })
+
+      // Limpar formulário e redirecionar
+      setFormData({
+        trackingCode: "",
+        senderName: "",
+        recipientName: "",
+        recipientCpf: "",
+        originAddress: "",
+        destinationAddress: "",
+        productType: "",
+        weight: "",
+        shipDate: new Date().toISOString().split("T")[0],
+        status: "Objeto postado",
+        customerEmail: "",
+        customerPhone: "",
+      })
+
+      router.push("/admin/pedidos")
     } catch (error) {
-      console.error("Erro ao enviar formulário:", error)
+      console.error("Erro ao criar remessa:", error)
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro ao criar remessa",
+        variant: "destructive",
+      })
     } finally {
-      setIsSubmitting(false)
+      setLoading(false)
     }
   }
 
-  // Lista de todos os status possíveis
-  const allStatuses = [
-    "Objeto postado",
-    "Em processo de triagem",
-    "Em trânsito para o centro de distribuição",
-    "No centro de distribuição",
-    "Em rota de entrega",
-    "Entregue com sucesso",
-    "Entrega não realizada – destinatário ausente",
-    "Objeto devolvido ao remetente",
-    "Aguardando retirada em unidade",
-  ]
+  const generateTrackingCode = () => {
+    const today = new Date()
+    const dateStr = today.toISOString().split("T")[0].replace(/-/g, "")
+    const random = Math.floor(1000 + Math.random() * 9000)
+    const trackingCode = `LOG-${dateStr}-${random}`
+    setFormData((prev) => ({ ...prev, trackingCode }))
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{isEditing ? "Editar Remessa" : "Cadastrar Nova Remessa"}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Campo de código de rastreio (visível apenas para novos cadastros) */}
-          {!isEditing && (
-            <div className="space-y-2">
-              <Label htmlFor="trackingCode">Código de Rastreio (opcional)</Label>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="trackingCode">Código de Rastreio</Label>
+            <div className="flex mt-1">
               <Input
                 id="trackingCode"
                 name="trackingCode"
                 value={formData.trackingCode}
-                onChange={(e) => setFormData((prev) => ({ ...prev, trackingCode: e.target.value.toUpperCase() }))}
-                placeholder="Deixe em branco para gerar automaticamente"
-              />
-              <p className="text-xs text-gray-500">
-                Se deixado em branco, um código será gerado automaticamente no formato LOG-AAAAMMDD-XXXX
-              </p>
-            </div>
-          )}
-
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="senderName">Nome do Remetente</Label>
-              <Input id="senderName" name="senderName" value={formData.senderName} onChange={handleChange} required />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="recipientName">Nome do Destinatário</Label>
-              <Input
-                id="recipientName"
-                name="recipientName"
-                value={formData.recipientName}
                 onChange={handleChange}
-                required
+                placeholder="LOG-AAAAMMDD-XXXX"
+                className="flex-grow"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="recipientCpf">CPF do Destinatário</Label>
-              <Input
-                id="recipientCpf"
-                name="recipientCpf"
-                value={formData.recipientCpf}
-                onChange={handleCpfChange}
-                placeholder="123.456.789-00"
-                maxLength={14}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="shipDate">Data de Envio</Label>
-              <Input
-                id="shipDate"
-                name="shipDate"
-                type="date"
-                value={formData.shipDate}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="originAddress">Endereço de Origem</Label>
-              <Input
-                id="originAddress"
-                name="originAddress"
-                value={formData.originAddress}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="destinationAddress">Endereço de Destino</Label>
-              <Input
-                id="destinationAddress"
-                name="destinationAddress"
-                value={formData.destinationAddress}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="productType">Tipo de Produto</Label>
-              <Select
-                value={formData.productType}
-                onValueChange={(value) => handleSelectChange("productType", value)}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo de produto" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Eletrônico">Eletrônico</SelectItem>
-                  <SelectItem value="Vestuário">Vestuário</SelectItem>
-                  <SelectItem value="Alimento">Alimento</SelectItem>
-                  <SelectItem value="Documento">Documento</SelectItem>
-                  <SelectItem value="Outro">Outro</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="weight">Peso (kg)</Label>
-              <Input
-                id="weight"
-                name="weight"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.weight}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status">Status Inicial</Label>
-              <Select value={formData.status} onValueChange={(value) => handleSelectChange("status", value)} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o status inicial" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allStatuses.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-2">
-            {isEditing && onCancel && (
-              <Button type="button" variant="outline" onClick={onCancel}>
-                Cancelar
+              <Button type="button" onClick={generateTrackingCode} className="ml-2">
+                Gerar
               </Button>
-            )}
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Processando..." : isEditing ? "Atualizar Remessa" : "Cadastrar Remessa"}
-            </Button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Formato: LOG-AAAAMMDD-XXXX</p>
           </div>
-        </form>
-      </CardContent>
-    </Card>
+
+          <div>
+            <Label htmlFor="senderName">Nome do Remetente</Label>
+            <Input
+              id="senderName"
+              name="senderName"
+              value={formData.senderName}
+              onChange={handleChange}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="originAddress">Endereço de Origem</Label>
+            <Textarea
+              id="originAddress"
+              name="originAddress"
+              value={formData.originAddress}
+              onChange={handleChange}
+              className="mt-1"
+              rows={3}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="productType">Tipo de Produto</Label>
+            <Input
+              id="productType"
+              name="productType"
+              value={formData.productType}
+              onChange={handleChange}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="weight">Peso (kg)</Label>
+            <Input
+              id="weight"
+              name="weight"
+              type="number"
+              step="0.01"
+              min="0.01"
+              value={formData.weight}
+              onChange={handleChange}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="shipDate">Data de Envio</Label>
+            <Input
+              id="shipDate"
+              name="shipDate"
+              type="date"
+              value={formData.shipDate}
+              onChange={handleChange}
+              className="mt-1"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="recipientName">Nome do Destinatário</Label>
+            <Input
+              id="recipientName"
+              name="recipientName"
+              value={formData.recipientName}
+              onChange={handleChange}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="recipientCpf">CPF do Destinatário</Label>
+            <Input
+              id="recipientCpf"
+              name="recipientCpf"
+              value={formData.recipientCpf}
+              onChange={handleChange}
+              placeholder="123.456.789-00"
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="destinationAddress">Endereço de Destino</Label>
+            <Textarea
+              id="destinationAddress"
+              name="destinationAddress"
+              value={formData.destinationAddress}
+              onChange={handleChange}
+              className="mt-1"
+              rows={3}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="customerEmail">Email do Cliente</Label>
+            <Input
+              id="customerEmail"
+              name="customerEmail"
+              type="email"
+              value={formData.customerEmail}
+              onChange={handleChange}
+              className="mt-1"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Email para envio de atualizações de status (opcional, mas recomendado)
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="customerPhone">Telefone do Cliente</Label>
+            <Input
+              id="customerPhone"
+              name="customerPhone"
+              value={formData.customerPhone}
+              onChange={handleChange}
+              placeholder="(11) 98765-4321"
+              className="mt-1"
+            />
+            <p className="text-xs text-gray-500 mt-1">Opcional</p>
+          </div>
+
+          <div>
+            <Label htmlFor="orderId">ID do Pedido</Label>
+            <Input
+              id="orderId"
+              name="orderId"
+              value={formData.orderId || ""}
+              onChange={handleChange}
+              className="mt-1"
+              placeholder="Opcional"
+            />
+            <p className="text-xs text-gray-500 mt-1">Referência externa (opcional)</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <Button type="submit" disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Criando...
+            </>
+          ) : (
+            "Criar Remessa"
+          )}
+        </Button>
+      </div>
+    </form>
   )
 }

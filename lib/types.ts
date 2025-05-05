@@ -15,15 +15,16 @@ export interface Shipment {
 }
 
 export type ShipmentStatus =
-  | "Objeto postado"
-  | "Em processo de triagem"
-  | "Em trânsito para o centro de distribuição"
-  | "No centro de distribuição"
-  | "Em rota de entrega"
-  | "Entregue com sucesso"
-  | "Entrega não realizada – destinatário ausente"
-  | "Objeto devolvido ao remetente"
-  | "Aguardando retirada em unidade"
+  | "Postado"
+  | "Em triagem"
+  | "Em trânsito"
+  | "No centro"
+  | "Em rota"
+  | "Entregue"
+  | "Destinatário ausente"
+  | "Devolvido"
+  | "Aguardando retirada"
+  | string // Adicionado para permitir status personalizados
 
 export interface StatusHistory {
   id: number

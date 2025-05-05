@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar -->
+      <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar">
+        <div class="position-sticky pt-3">
+          <div class="sidebar-header mb-4">
+            <h3 class="text-light">WhatsApp Sender</h3>
+          </div>
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link" href="/admin">
+                <i class="bi bi-house-door"></i> Dashboard
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" href="/admin/sessions">
+                <i class="bi bi-phone"></i> Sessões
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/admin/stats">
+                <i class="bi bi-graph-up"></i> Estatísticas
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/admin/queues">
+                <i class="bi bi-list-check"></i> Filas
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+
+      <!-- Main content -->
+      <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+          <h1 class="h2">Gerenciamento de Sessões</h1>
+          <div class="btn-toolbar mb-2 mb-md-0">
+            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#newSessionModal">
+              <i class="bi bi-plus-circle"></i> Nova Sessão
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Status</th>
+                <th>QR Code</th>
+                <th>Última Atividade</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="sessions-table">
+              <% if (sessions.length === 0) { %>
+                <tr>
+                  <td colspan="5" class="text-center">Nenhuma sessão encontrada</td>
+                </tr>
+              <% } else { %>
+                <% sessions.forEach(function(session) { %>
+                  <tr>
+                    <td><%= session.id %></td>
+                    <td>
+                      <span class="badge <%= session.status === 'ready' ? 'bg-success' : 
+                                            session.status === 'qr_ready' ? 'bg-warning' : 
+                                            session.status === 'initializing' ? 'bg-info' : 
+                                            session.status === 'authenticated' ? 'bg-primary' : 
+                                            session.status === 'disconnected' ? 'bg-danger' : 
+                                            session.status === 'reconnecting' ? 'bg-secondary' : 'bg-dark' %>">
+                        <%= session.status === 'ready' ? 'Online' : 
+                           session.status === 'qr_ready' ? 'QR Code Pronto' : 
+                           session.status === 'initializing' ? 'Inicializando' : 
+                           session.status === 'authenticated' ? 'Autenticado' : 
+                           session.status === 'disconnected' ? 'Desconectado' : 
+                           session.status === 'reconnecting' ? 'Reconectando' : session.status %>
+                      </span>
+                    </td>
+                    <td>
+                      <% if (session.qrCode) { %>
+                        <button class="btn btn-sm btn-primary show-qr-code" data-qr="<%= session.qrCode %>" data-session-id="<%= session.id %>">
+                          Ver QR Code
+                        </button>
+                      <% } else { %>
+                        <span class="text-muted">Não disponível</span>
+                      <% } %>
+                    </td>
+                    <td><%= new Date(session.lastActivity).toLocaleString() %></td>
+                    <td>
+                      <div class="btn-group" role="group">
+                        <% if (session.status === 'disconnected' || session.status === 'error') { %>
+                          <form action="/admin/sessions/<%= session.id %>/reconnect" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-warning">
+                              <i class="bi bi-arrow-repeat"></i> Reconectar
+                            </button>
+                          </form>
+                        <% } %>
+                        <form action="/admin/sessions/<%= session.id %>/close" method="POST" class="d-inline ms-2">
+                          <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza que deseja encerrar esta sessão?')">
+                            <i class="bi bi-x-circle"></i> Encerrar
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                <% }); %>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal Nova Sessão -->
+  <div class="modal fade" id="newSessionModal" tabindex="-1" aria-labelledby="newSessionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="newSessionModalLabel">Nova Sessão</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form action="/admin/sessions" method="POST">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="sessionId" class="form-label">ID da Sessão</label>
+              <input type="text" class="form-control" id="sessionId" name="sessionId" required placeholder="Ex: cliente1, marketing, etc.">
+              <div class="form-text">Use um identificador único para esta sessão.</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Criar Sessão</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal QR Code -->
+  <div class="modal fade" id="qrCodeModal" tabindex="-1" aria-labelledby="qrCodeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="qrCodeModalLabel">Escaneie o QR Code</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center">
+          <p>Abra o WhatsApp no seu celular e escaneie o QR Code abaixo:</p>
+          <div id="qrcode-container" class="my-3">
+            <img id="qrcode-image" src="/placeholder.svg" alt="QR Code" class="img-fluid">
+          </div>
+          <div class="alert alert-info">
+            Este QR Code expira em 60 segundos. Se expirar, feche este modal e reconecte a sessão.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Mostrar QR Code
+      const qrButtons = document.querySelectorAll('.show-qr-code');
+      const qrModal = new bootstrap.Modal(document.getElementById('qrCodeModal'));
+      const qrImage = document.getElementById('qrcode-image');
+      
+      qrButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const qrCode = this.getAttribute('data-qr');
+          const sessionId = this.getAttribute('data-session-id');
+          
+          qrImage.src = qrCode;
+          document.getElementById('qrCodeModalLabel').textContent = `Escaneie o QR Code - Sessão: ${sessionId}`;
+          qrModal.show();
+        });
+      });
+      
+      // Socket.io para atualizações em tempo real
+      const socket = io();
+      
+      socket.on('sessionsStatus', function(sessions) {
+        // Atualizar tabela apenas se houver mudanças
+        const tbody = document.getElementById('sessions-table');
+        if (!tbody) return;
+        
+        // Recarregar a página para mostrar as mudanças
+        // Em uma implementação mais avançada, você pode atualizar a tabela dinamicamente
+        location.reload();
+      });
+    });
+  </script>
+</body>
+</html>

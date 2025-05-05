@@ -58,34 +58,34 @@ export function TrackingResult({ shipment }: TrackingResultProps) {
     const statusLower = shipment.status.toLowerCase()
 
     if (statusLower.includes("postado")) {
-      return <Package className="h-10 w-10 text-yellow-500" />
+      return <Package className="h-8 w-8 sm:h-10 sm:w-10 text-yellow-500" />
     }
     if (statusLower.includes("triagem")) {
-      return <Scan className="h-10 w-10 text-blue-500" />
+      return <Scan className="h-8 w-8 sm:h-10 sm:w-10 text-blue-500" />
     }
     if (statusLower.includes("trânsito")) {
-      return <Truck className="h-10 w-10 text-blue-500" />
+      return <Truck className="h-8 w-8 sm:h-10 sm:w-10 text-blue-500" />
     }
     if (statusLower.includes("centro de distribuição")) {
-      return <Warehouse className="h-10 w-10 text-blue-500" />
+      return <Warehouse className="h-8 w-8 sm:h-10 sm:w-10 text-blue-500" />
     }
     if (statusLower.includes("rota de entrega")) {
-      return <MapPin className="h-10 w-10 text-blue-500" />
+      return <MapPin className="h-8 w-8 sm:h-10 sm:w-10 text-blue-500" />
     }
     if (statusLower.includes("entregue com sucesso")) {
-      return <CheckCircle className="h-10 w-10 text-green-500" />
+      return <CheckCircle className="h-8 w-8 sm:h-10 sm:w-10 text-green-500" />
     }
     if (statusLower.includes("não realizada") || statusLower.includes("ausente")) {
-      return <AlertTriangle className="h-10 w-10 text-orange-500" />
+      return <AlertTriangle className="h-8 w-8 sm:h-10 sm:w-10 text-orange-500" />
     }
     if (statusLower.includes("devolvido")) {
-      return <PackageX className="h-10 w-10 text-red-500" />
+      return <PackageX className="h-8 w-8 sm:h-10 sm:w-10 text-red-500" />
     }
     if (statusLower.includes("aguardando retirada")) {
-      return <Clock className="h-10 w-10 text-purple-500" />
+      return <Clock className="h-8 w-8 sm:h-10 sm:w-10 text-purple-500" />
     }
 
-    return <Package className="h-10 w-10 text-yellow-500" />
+    return <Package className="h-8 w-8 sm:h-10 sm:w-10 text-yellow-500" />
   }
 
   const getStatusClass = () => {
@@ -116,44 +116,46 @@ export function TrackingResult({ shipment }: TrackingResultProps) {
   }
 
   return (
-    <Card className="mt-8 overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-red-600 to-red-700 text-white">
-        <CardTitle className="flex items-center justify-between">
-          <span>Resultado do Rastreamento</span>
-          <span className={`rounded-full bg-white px-3 py-1 text-xs font-medium ${getStatusClass()}`}>
+    <Card className="mt-4 sm:mt-8 overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-red-600 to-red-700 text-white p-4 sm:p-6">
+        <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <span className="mb-2 sm:mb-0">Resultado do Rastreamento</span>
+          <span
+            className={`rounded-full bg-white px-2 py-1 text-xs font-medium ${getStatusClass()} mt-1 sm:mt-0 self-start sm:self-auto`}
+          >
             {shipment.status}
           </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="bg-gray-50 p-6">
-          <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-md">
+        <div className="bg-gray-50 p-4 sm:p-6">
+          <div className="mb-4 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-white shadow-md">
             {getStatusIcon()}
           </div>
-          <h2 className="text-2xl font-bold text-gray-800">{shipment.status}</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">{shipment.status}</h2>
         </div>
 
-        <div className="mb-6 rounded-lg bg-white p-4 shadow-sm">
+        <div className="mb-4 sm:mb-6 rounded-lg bg-white p-3 sm:p-4 shadow-sm mx-4 sm:mx-6">
           <div className="flex items-center">
-            <div className="mr-4 flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600">
-              <Package className="h-5 w-5" />
+            <div className="mr-3 sm:mr-4 flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-red-100 text-red-600">
+              <Package className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-gray-800">Código de Rastreio</h3>
-              <p className="text-lg font-mono text-red-600">{shipment.trackingCode}</p>
+              <h3 className="text-sm sm:text-base font-bold text-gray-800">Código de Rastreio</h3>
+              <p className="text-base sm:text-lg font-mono text-red-600">{shipment.trackingCode}</p>
             </div>
           </div>
         </div>
 
         {/* Timeline de rastreamento */}
-        <div className="p-6">
-          <h3 className="mb-6 text-xl font-bold text-gray-800">Acompanhamento da Entrega</h3>
+        <div className="p-4 sm:p-6">
+          <h3 className="mb-4 sm:mb-6 text-lg sm:text-xl font-bold text-gray-800">Acompanhamento da Entrega</h3>
           <TrackingTimeline shipment={shipment} />
         </div>
 
-        <div className="border-t border-gray-200 bg-white p-6">
-          <h3 className="mb-6 text-xl font-bold text-gray-800">Detalhes da Remessa</h3>
-          <div className="grid gap-6 md:grid-cols-2">
+        <div className="border-t border-gray-200 bg-white p-4 sm:p-6">
+          <h3 className="mb-4 sm:mb-6 text-lg sm:text-xl font-bold text-gray-800">Detalhes da Remessa</h3>
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
             <div className="rounded-lg border border-gray-200 p-3 shadow-sm transition-all hover:shadow-md">
               <div className="mb-2 flex items-center">
                 <User className="mr-2 h-4 w-4 text-red-600" />
@@ -162,7 +164,7 @@ export function TrackingResult({ shipment }: TrackingResultProps) {
               <p className="mb-1 font-medium">{shipment.senderName}</p>
               <div className="flex items-start">
                 <MapPinned className="mr-2 mt-1 h-3 w-3 text-gray-400" />
-                <p className="text-sm text-gray-600">{shipment.originAddress}</p>
+                <p className="text-xs sm:text-sm text-gray-600">{shipment.originAddress}</p>
               </div>
             </div>
 
@@ -172,10 +174,10 @@ export function TrackingResult({ shipment }: TrackingResultProps) {
                 <h4 className="text-xs font-semibold uppercase text-gray-500">Destinatário</h4>
               </div>
               <p className="mb-1 font-medium">{shipment.recipientName}</p>
-              <p className="mb-1 text-sm text-gray-600">CPF: {shipment.recipientCpf}</p>
+              <p className="mb-1 text-xs sm:text-sm text-gray-600">CPF: {shipment.recipientCpf}</p>
               <div className="flex items-start">
                 <MapPinned className="mr-2 mt-1 h-3 w-3 text-gray-400" />
-                <p className="text-sm text-gray-600">{shipment.destinationAddress}</p>
+                <p className="text-xs sm:text-sm text-gray-600">{shipment.destinationAddress}</p>
               </div>
             </div>
 
@@ -184,10 +186,10 @@ export function TrackingResult({ shipment }: TrackingResultProps) {
                 <ShoppingBag className="mr-2 h-4 w-4 text-red-600" />
                 <h4 className="text-xs font-semibold uppercase text-gray-500">Produto</h4>
               </div>
-              <p className="mb-1 text-sm text-gray-600">Tipo: {shipment.productType}</p>
+              <p className="mb-1 text-xs sm:text-sm text-gray-600">Tipo: {shipment.productType}</p>
               <div className="flex items-center">
                 <Scale className="mr-2 h-3 w-3 text-gray-400" />
-                <p className="text-sm text-gray-600">Peso: {shipment.weight} kg</p>
+                <p className="text-xs sm:text-sm text-gray-600">Peso: {shipment.weight} kg</p>
               </div>
             </div>
 
@@ -196,7 +198,7 @@ export function TrackingResult({ shipment }: TrackingResultProps) {
                 <Calendar className="mr-2 h-4 w-4 text-red-600" />
                 <h4 className="text-xs font-semibold uppercase text-gray-500">Data de Envio</h4>
               </div>
-              <p className="text-sm text-gray-600">{shipment.shipDate}</p>
+              <p className="text-xs sm:text-sm text-gray-600">{shipment.shipDate}</p>
             </div>
           </div>
         </div>

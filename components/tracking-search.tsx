@@ -52,18 +52,18 @@ export function TrackingSearch() {
 
   return (
     <div>
-      <form onSubmit={handleSearch} className="flex items-center">
-        <div className="relative flex-grow">
+      <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-center">
+        <div className="relative flex-grow w-full mb-2 sm:mb-0">
           <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
           <Input
             type="text"
             placeholder="Digite seu código de rastreio"
             value={trackingCode}
             onChange={(e) => setTrackingCode(e.target.value.toUpperCase())}
-            className="border-0 pl-10 focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="border-0 pl-10 focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
           />
         </div>
-        <Button type="submit" className="ml-2 bg-red-600 hover:bg-red-700" disabled={loading}>
+        <Button type="submit" className="bg-red-600 hover:bg-red-700 w-full sm:w-auto sm:ml-2" disabled={loading}>
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

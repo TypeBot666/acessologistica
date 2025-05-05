@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar -->
+      <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar">
+        <div class="position-sticky pt-3">
+          <div class="sidebar-header mb-4">
+            <h3 class="text-light">WhatsApp Sender</h3>
+          </div>
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link active" href="/admin">
+                <i class="bi bi-house-door"></i> Dashboard
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/admin/sessions">
+                <i class="bi bi-phone"></i> Sessões
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/admin/stats">
+                <i class="bi bi-graph-up"></i> Estatísticas
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/admin/queues">
+                <i class="bi bi-list-check"></i> Filas
+              </a>
+            </li>
+          </ul>
+          
+          <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+            <span>Documentação</span>
+          </h6>
+          <ul class="nav flex-column mb-2">
+            <li class="nav-item">
+              <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#apiDocsModal">
+                <i class="bi bi-file-earmark-text"></i> API Docs
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+
+      <!-- Main content -->
+      <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+          <h1 class="h2">Dashboard</h1>
+          <div class="btn-toolbar mb-2 mb-md-0">
+            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#newSessionModal">
+              <i class="bi bi-plus-circle"></i> Nova Sessão
+            </button>
+          </div>
+        </div>
+
+        <div class="row" id="dashboard-stats">
+          <div class="col-md-3 mb-4">
+            <div class="card bg-primary text-white h-100">
+              <div class="card-body">
+                <h5 class="card-title">Sessões Ativas</h5>
+                <h2 class="card-text" id="active-sessions">0</h2>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 mb-4">
+            <div class="card bg-success text-white h-100">
+              <div class="card-body">
+                <h5 class="card-title">Mensagens Enviadas</h5>
+                <h2 class="card-text" id="sent-messages">0</h2>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 mb-4">
+            <div class="card bg-warning text-dark h-100">
+              <div class="card-body">
+                <h5 class="card-title">Na Fila</h5>
+                <h2 class="card-text" id="queued-messages">0</h2>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 mb-4">
+            <div class="card bg-info text-white h-100">
+              <div class="card-body">
+                <h5 class="card-title">Taxa de Sucesso</h5>
+                <h2 class="card-text" id="success-rate">0%</h2>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h2>Sessões Recentes</h2>
+        <div class="table-responsive">
+          <table class="table table-striped table-sm">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Status</th>
+                <th>Última Atividade</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="sessions-table">
+              <tr>
+                <td colspan="4" class="text-center">Carregando sessões...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal Nova Sessão -->
+  <div class="modal fade" id="newSessionModal" tabindex="-1" aria-labelledby="newSessionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="newSessionModalLabel">Nova Sessão</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form action="/admin/sessions" method="POST">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="sessionId" class="form-label">ID da Sessão</label>
+              <input type="text" class="form-control" id="sessionId" name="sessionId" required placeholder="Ex: cliente1, marketing, etc.">
+              <div class="form-text">Use um identificador único para esta sessão.</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Criar Sessão</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal QR Code -->
+  <div class="modal fade" id="qrCodeModal" tabindex="-1" aria-labelledby="qrCodeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="qrCodeModalLabel">Escaneie o QR Code</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center">
+          <p>Abra o WhatsApp no seu celular e escaneie o QR Code abaixo:</p>
+          <div id="qrcode-container" class="my-3">
+            <img id="qrcode-image" src="/placeholder.svg" alt="QR Code" class="img-fluid">
+          </div>
+          <div class="alert alert-info">
+            Este QR Code expira em 60 segundos. Se expirar, feche este modal e reconecte a sessão.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal API Docs -->
+  <div class="modal fade" id="apiDocsModal" tabindex="-1" aria-labelledby="apiDocsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="apiDocsModalLabel">Documentação da API</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <h4>Autenticação</h4>
+          <p>Todas as requisições à API devem incluir o cabeçalho <code>X-API-Key</code> com sua chave de API.</p>
+          
+          <h4>Endpoints</h4>
+          
+          <div class="card mb-3">
+            <div class="card-header">
+              <strong>POST /api/send-message</strong> - Enviar mensagem
+            </div>
+            <div class="card-body">
+              <h5>Corpo daPOST /api/send-message</strong> - Enviar mensagem
+            </div>
+            <div class="card-body">
+              <h5>Corpo da requisição:</h5>
+              <pre><code>{
+  "sessionId": "cliente1",
+  "phone": "5511999999999",
+  "message": "Sua encomenda foi postada com sucesso!",
+  "scheduledTime": "2023-05-04T15:30:00" // Opcional
+}</code></pre>
+              <h5>Resposta:</h5>
+              <pre><code>{
+  "success": true,
+  "jobId": "123456",
+  "status": "queued",
+  "message": "Mensagem adicionada à fila com sucesso."
+}</code></pre>
+            </div>
+          </div>
+
+          <div class="card mb-3">
+            <div class="card-header">
+              <strong>GET /api/sessions</strong> - Listar sessões
+            </div>
+            <div class="card-body">
+              <h5>Resposta:</h5>
+              <pre><code>{
+  "success": true,
+  "sessions": [
+    {
+      "id": "cliente1",
+      "status": "ready",
+      "qrCode": null,
+      "lastActivity": "2023-05-04T14:30:00"
+    }
+  ]
+}</code></pre>
+            </div>
+          </div>
+
+          <div class="card mb-3">
+            <div class="card-header">
+              <strong>POST /api/sessions</strong> - Criar sessão
+            </div>
+            <div class="card-body">
+              <h5>Corpo da requisição:</h5>
+              <pre><code>{
+  "sessionId": "cliente1"
+}</code></pre>
+              <h5>Resposta:</h5>
+              <pre><code>{
+  "success": true,
+  "message": "Sessão cliente1 criada. Aguardando QR Code."
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>
